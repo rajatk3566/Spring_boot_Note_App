@@ -1,50 +1,71 @@
 package com.example.spring_boot_training.controller;
 
-
 import com.example.spring_boot_training.dto.CreateNoteDto;
 import com.example.spring_boot_training.dto.GetNoteDto;
 import com.example.spring_boot_training.dto.UpdateNoteDto;
+import com.example.spring_boot_training.entities.User;
 import com.example.spring_boot_training.services.NoteService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-
-
 @RestController
+@RequestMapping("/api/notes")
+@RequiredArgsConstructor
 public class NoteController {
 
-    @Autowired
-    private NoteService noteService;
+    private final NoteService noteService;
 
-    @PostMapping("/note/create")
-    public GetNoteDto createNote(@RequestBody CreateNoteDto createNoteDto) {
-        return noteService.createNote(createNoteDto);
+    @PostMapping
+    public ResponseEntity<GetNoteDto> createNote(
+            @RequestBody CreateNoteDto createNoteDto,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(noteService.createNote(createNoteDto, user));
     }
 
-    @GetMapping("/notes")
-    public List<GetNoteDto> getAllNotes() {
-        return noteService.getAllNotes();
+    @GetMapping
+    public ResponseEntity<List<GetNoteDto>> getAllNotes(
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(noteService.getAllNotes(user));
     }
 
-    @GetMapping("/note/{id}")
-    public GetNoteDto getNoteById(@PathVariable Long id){
-        return  noteService.getNoteById(id);
+    @GetMapping("/{id}")
+    public ResponseEntity<GetNoteDto> getNoteById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(noteService.getNoteById(id, user));
     }
 
-    @PutMapping("/note/update/{id}")
-    public GetNoteDto updateNote(@PathVariable Long id, @RequestBody UpdateNoteDto updateNoteDto){
-        return  noteService.updateNote(id, updateNoteDto);
+    @PutMapping("/{id}")
+    public ResponseEntity<GetNoteDto> updateNote(
+            @PathVariable Long id,
+            @RequestBody UpdateNoteDto updateNoteDto,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(noteService.updateNote(id, updateNoteDto, user));
     }
 
-    @DeleteMapping("/delete/{id}")
-    public void deleteNote(@PathVariable Long id){
-        noteService.deleteNote(id);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteNote(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        noteService.deleteNote(id, user);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}")
-    public GetNoteDto partiallyUpdateNote(@PathVariable Long id, @RequestBody Map<String,Object> updates){
-        return noteService.partiallyUpdateNote(id, updates);
+    public ResponseEntity<GetNoteDto> partiallyUpdateNote(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> updates,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(noteService.partiallyUpdateNote(id, updates, user));
     }
 }

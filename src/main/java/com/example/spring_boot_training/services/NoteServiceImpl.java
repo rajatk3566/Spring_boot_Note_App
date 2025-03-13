@@ -4,6 +4,7 @@ import com.example.spring_boot_training.dto.CreateNoteDto;
 import com.example.spring_boot_training.dto.GetNoteDto;
 import com.example.spring_boot_training.dto.UpdateNoteDto;
 import com.example.spring_boot_training.entities.Note;
+import com.example.spring_boot_training.entities.User;
 import com.example.spring_boot_training.exception.NoteNotFoundException;
 import com.example.spring_boot_training.repository.NoteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,63 +17,78 @@ import java.util.stream.Collectors;
 @Service
 public class NoteServiceImpl implements NoteService {
 
+    private final NoteRepository noteRepository;
+
     @Autowired
-    private NoteRepository noteRepository;
+    public NoteServiceImpl(NoteRepository noteRepository) {
+        this.noteRepository = noteRepository;
+    }
 
     @Override
-    public GetNoteDto createNote(CreateNoteDto createNoteDto) {
-        Note note = new Note();
-        note.setTitle(createNoteDto.getTitle());
-        note.setContent(createNoteDto.getContent());
+    public GetNoteDto createNote(CreateNoteDto createNoteDto, User user) {
+        Note note = Note.builder()
+                .title(createNoteDto.getTitle())
+                .content(createNoteDto.getContent())
+                .user(user)
+                .build();
         Note savedNote = noteRepository.save(note);
-
-        return new GetNoteDto(savedNote.getId(), savedNote.getTitle(), savedNote.getContent());
+        return convertToDto(savedNote);
     }
 
     @Override
-    public List<GetNoteDto> getAllNotes() {
-        return noteRepository.findAll().stream().map(note -> new GetNoteDto(note.getId(), note.getTitle(),
-                note.getContent())).collect(Collectors.toList());
+    public List<GetNoteDto> getAllNotes(User user) {
+        return noteRepository.findByUser(user).stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public GetNoteDto getNoteById(Long id) {
-        Note note = noteRepository.findById(id).orElseThrow(() ->new NoteNotFoundException("Not able to find note with id: " + id));
-        return new GetNoteDto(note.getId(), note.getTitle(), note.getContent());
+    public GetNoteDto getNoteById(Long id, User user) {
+        Note note = noteRepository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new NoteNotFoundException("Note not found with id: " + id));
+        return convertToDto(note);
     }
 
     @Override
-    public GetNoteDto updateNote(Long id, UpdateNoteDto updateNoteDto) {
-        Note note = noteRepository.findById(id).orElseThrow(() ->new NoteNotFoundException("Note not Updated"));
+    public GetNoteDto updateNote(Long id, UpdateNoteDto updateNoteDto, User user) {
+        Note note = noteRepository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new NoteNotFoundException("Note not found with id: " + id));
+
         note.setTitle(updateNoteDto.getTitle());
         note.setContent(updateNoteDto.getContent());
-        Note savedNote = noteRepository.save(note);
-        return new GetNoteDto(savedNote.getId(), savedNote.getTitle(), savedNote.getContent());
+
+        Note updatedNote = noteRepository.save(note);
+        return convertToDto(updatedNote);
     }
 
     @Override
-    public void deleteNote(Long id) {
-        noteRepository.deleteById(id);
+    public void deleteNote(Long id, User user) {
+        Note note = noteRepository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new NoteNotFoundException("Note not found with id: " + id));
+        noteRepository.delete(note);
     }
 
     @Override
-    public GetNoteDto partiallyUpdateNote(Long id, Map<String, Object> updates) {
-        Note note = noteRepository.findById(id).orElseThrow(() ->new NoteNotFoundException("Not Updated"));
+    public GetNoteDto partiallyUpdateNote(Long id, Map<String, Object> updates, User user) {
+        Note note = noteRepository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new NoteNotFoundException("Note not found with id: " + id));
+
         updates.forEach((key, value) -> {
-            switch (key){
-                case "title":
-                    note.setTitle((String) value);
-                    break;
-                case "content":
-                    note.setContent((String) value);
-                    break;
-                default:
-                    break;
+            switch (key) {
+                case "title" -> note.setTitle((String) value);
+                case "content" -> note.setContent((String) value);
             }
         });
 
-        Note updateNote = noteRepository.save(note);
-        return new GetNoteDto(updateNote.getId(), updateNote.getTitle(), updateNote.getContent());
+        Note updatedNote = noteRepository.save(note);
+        return convertToDto(updatedNote);
     }
 
+    private GetNoteDto convertToDto(Note note) {
+        return GetNoteDto.builder()
+                .id(note.getId())
+                .title(note.getTitle())
+                .content(note.getContent())
+                .build();
+    }
 }

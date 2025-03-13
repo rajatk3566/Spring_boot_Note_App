@@ -6,6 +6,7 @@ import lombok.*;
 
 @Table(name = "notes")
 @Entity
+@Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,4 +21,8 @@ public class Note {
 
     @Column (name = "note_content")
     private String content;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 }
