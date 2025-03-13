@@ -9,6 +9,7 @@ import org.springframework.web.context.request.WebRequest;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(NoteNotFoundException.class)
     public ResponseEntity<ErrorResponse>handleNoteNotFoundException(NoteNotFoundException ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
