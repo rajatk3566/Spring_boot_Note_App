@@ -50,7 +50,8 @@ src
     └── java
     └── com.example.spring_boot_training
         └── NoteServiceImplTest.java
-
+└───── docker-compose.yml
+└───── Dockerfile
 
 ```
 
