@@ -1,0 +1,69 @@
+name: Spring Boot CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres-build:
+        image: mysql
+        env:
+          MYSQL_DATABASE: NoteDatabase
+          MYSQL_ROOT_PASSWORD: Rajat@123
+        ports:
+          - 3306:3306
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK 23
+      uses: actions/setup-java@v3
+      with:
+        java-version: '23'
+        distribution: 'temurin'
+        cache: maven
+    
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
+      env:
+        SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/NoteDatabase
+        SPRING_DATASOURCE_USERNAME: root
+        SPRING_DATASOURCE_PASSWORD: Rajat@123
+    
+  
+  docker-build:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 23
+        uses: actions/setup-java@v3
+        with:
+          java-version: '23'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml -DskipTests
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: false
+          tags: rajat-k/spring_boot_Note_app
+
+      - name: Test with Docker Compose
+        run: |
+          docker compose up -d
+          sleep 30
+          docker compose down
